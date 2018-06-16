@@ -21,7 +21,6 @@ import com.mongodb.MongoWriteException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
-import org.bson.conversions.Bson;
 import sun.misc.BASE64Encoder;
 
 import java.io.UnsupportedEncodingException;
@@ -30,7 +29,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Random;
 
-import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 
 public class UserDAO {
@@ -46,19 +44,17 @@ public class UserDAO {
 
         String passwordHash = makePasswordHash(password, Integer.toString(random.nextInt()));
 
+        Document user = new Document();
 
-        Document document = new Document()
-                .append("_id",username)
-                .append("password",passwordHash);
+        user.append("_id", username).append("password", passwordHash);
 
         if (email != null && !email.equals("")) {
-            // if there is an email address specified, add it to the document too.
-            document.append("email",email);
+            // the provided email address
+            user.append("email", email);
         }
 
         try {
-            // insert the document into the user collection here
-            usersCollection.insertOne(document);
+            usersCollection.insertOne(user);
             return true;
         } catch (MongoWriteException e) {
             if (e.getError().getCategory().equals(ErrorCategory.DUPLICATE_KEY)) {
@@ -70,11 +66,9 @@ public class UserDAO {
     }
 
     public Document validateLogin(String username, String password) {
-        Document user = null;
+        Document user;
 
-        Bson filter = eq("_id",username);
-
-        user = usersCollection.find(filter).first();
+        user = usersCollection.find(eq("_id", username)).first();
 
         if (user == null) {
             System.out.println("User not in database");
